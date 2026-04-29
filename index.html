@@ -5,8 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>แบบสอบถามกิจกรรมค่ายนักเรียนทุนการศึกษาพระราชทานฯ</title>
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=Noto+Serif+Thai:wght@400;600;700&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
   :root {
     --gold: #C9952A;
@@ -887,22 +885,14 @@
 
   <!-- Admin Panel -->
   <div id="adminPanel" style="display:none">
-    <div class="card" style="margin-top:24px">
 
-      <!-- Header + Refresh -->
-      <div class="section-header" style="margin-bottom:12px">
+    <!-- KPI Cards -->
+    <div class="card" style="margin-top:24px">
+      <div class="section-header">
         <div class="section-num" style="background:linear-gradient(135deg,#2D7A4F,#4CAF50)">📊</div>
         <div class="section-title">Dashboard สรุปผลการสำรวจ</div>
-        <button onclick="fetchFromGoogleSheets().then(()=>updateStats())"
-          style="margin-left:auto;background:#E8F5E9;color:#1B5E20;border:1.5px solid #A5D6A7;border-radius:20px;padding:6px 14px;font-family:'Sarabun',sans-serif;font-size:13px;font-weight:600;cursor:pointer;flex-shrink:0">
-          🔄 รีเฟรช
-        </button>
       </div>
 
-      <!-- Status Bar -->
-      <div id="fetchStatus" style="display:none;align-items:center;gap:8px;background:#FFF8E1;border:1px solid #FFE082;border-radius:10px;padding:10px 14px;margin-bottom:14px;font-size:13px;font-weight:500"></div>
-
-      <!-- KPI Cards -->
       <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:20px">
         <div style="background:var(--navy);color:var(--gold-light);border-radius:12px;padding:14px 20px;flex:1;min-width:110px;text-align:center">
           <div style="font-size:28px;font-weight:700" id="totalCount">0</div>
@@ -924,11 +914,13 @@
 
       <!-- Charts Row -->
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">
+        <!-- Donut: เพศ -->
         <div style="background:#f8f9fa;border-radius:12px;padding:16px;text-align:center">
           <div style="font-weight:600;color:var(--navy);margin-bottom:10px;font-size:14px">สัดส่วนเพศ</div>
           <canvas id="genderChart" width="180" height="180" style="max-width:180px"></canvas>
           <div id="genderLegend" style="margin-top:8px;font-size:12px;color:#555"></div>
         </div>
+        <!-- Donut: สถานะ -->
         <div style="background:#f8f9fa;border-radius:12px;padding:16px;text-align:center">
           <div style="font-weight:600;color:var(--navy);margin-bottom:10px;font-size:14px">สัดส่วนสถานะ</div>
           <canvas id="statusChart" width="180" height="180" style="max-width:180px"></canvas>
@@ -936,38 +928,38 @@
         </div>
       </div>
 
-      <!-- Bar Chart -->
+      <!-- Bar Chart: Section 2 -->
       <div style="background:#f8f9fa;border-radius:12px;padding:16px;margin-bottom:16px">
-        <div style="font-weight:600;color:var(--navy);margin-bottom:12px;font-size:14px">📊 คะแนนเฉลี่ยรายข้อ (q1–q8)</div>
-        <canvas id="knowledgeChart" height="260"></canvas>
+        <div style="font-weight:600;color:var(--navy);margin-bottom:12px;font-size:14px">📚 ด้านความรู้ความเข้าใจ & ทัศนคติ (ข้อ 1–11)</div>
+        <canvas id="knowledgeChart" height="280"></canvas>
       </div>
-      <canvas id="managementChart" style="display:none" height="1"></canvas>
 
-      <!-- ตารางสรุปคะแนน -->
+      <!-- Bar Chart: Section 3 -->
+      <div style="background:#f8f9fa;border-radius:12px;padding:16px;margin-bottom:20px">
+        <div style="font-weight:600;color:var(--navy);margin-bottom:12px;font-size:14px">🏕️ ด้านการบริหารจัดการและความพึงพอใจ (ข้อ 1–4)</div>
+        <canvas id="managementChart" height="160"></canvas>
+      </div>
+
+      <!-- ตารางสรุปผลข้อปรนัย -->
       <div style="background:#f8f9fa;border-radius:12px;padding:20px;margin-bottom:20px">
         <div style="font-weight:700;color:var(--navy);margin-bottom:4px;font-size:15px;font-family:'Noto Serif Thai',serif">📋 ตารางสรุปผลคำตอบข้อปรนัย (Rating 1–5)</div>
         <div style="font-size:12px;color:var(--text-soft);margin-bottom:16px">แสดงคะแนนเฉลี่ย ระดับ และการกระจายคำตอบในแต่ละระดับ</div>
-        <div id="mcqDashboard"><div style="text-align:center;padding:24px;color:var(--text-soft);font-size:13px">ยังไม่มีข้อมูล</div></div>
+        <div id="mcqDashboard">
+          <div style="text-align:center;padding:24px;color:var(--text-soft);font-size:13px">ยังไม่มีข้อมูล</div>
+        </div>
       </div>
 
-      <!-- ตารางรายชื่อผู้ตอบทั้งหมด -->
-      <div style="background:#f8f9fa;border-radius:12px;padding:20px;margin-bottom:20px">
-        <div style="font-weight:700;color:var(--navy);margin-bottom:4px;font-size:15px;font-family:'Noto Serif Thai',serif">👥 รายการผู้ตอบแบบสอบถามทั้งหมด</div>
-        <div style="font-size:12px;color:var(--text-soft);margin-bottom:14px">แสดงคะแนนรายข้อ q1–q8 และค่าเฉลี่ยของแต่ละคน</div>
-        <div id="allRespondentsTable"><div style="text-align:center;padding:24px;color:var(--text-soft);font-size:13px">ยังไม่มีข้อมูล</div></div>
-      </div>
-
-      <!-- Action Buttons -->
+      <!-- Buttons -->
       <div style="display:flex;gap:10px;flex-wrap:wrap">
-        <button onclick="exportExcel()" style="background:linear-gradient(135deg,#1B5E20,#388E3C);color:white;border:none;padding:12px 24px;border-radius:50px;font-family:'Sarabun',sans-serif;font-size:15px;font-weight:600;cursor:pointer;box-shadow:0 4px 16px rgba(27,94,32,0.3);display:flex;align-items:center;gap:8px">
+        <button onclick="exportExcel()" style="background:linear-gradient(135deg,#1B5E20,#388E3C);color:white;border:none;padding:12px 24px;border-radius:50px;font-family:'Sarabun',sans-serif;font-size:15px;font-weight:600;cursor:pointer;box-shadow:0 4px 16px rgba(27,94,32,0.3);display:flex;align-items:center;gap:8px;transition:all 0.2s">
           📥 Export เป็น Excel
         </button>
-        <button onclick="clearData()" style="background:white;color:#B71C1C;border:2px solid #FFCDD2;padding:12px 24px;border-radius:50px;font-family:'Sarabun',sans-serif;font-size:15px;font-weight:600;cursor:pointer">
+        <button onclick="clearData()" style="background:white;color:#B71C1C;border:2px solid #FFCDD2;padding:12px 24px;border-radius:50px;font-family:'Sarabun',sans-serif;font-size:15px;font-weight:600;cursor:pointer;transition:all 0.2s">
           🗑 ล้างข้อมูลทั้งหมด
         </button>
       </div>
 
-      <div id="previewTable" style="display:none"></div>
+      <div id="previewTable" style="margin-top:20px;overflow-x:auto"></div>
     </div>
   </div>
 
@@ -980,6 +972,8 @@
 
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script>
   let currentSection = 1;
   let userRole = null; // 'นักเรียน' or 'ครู'
@@ -1121,51 +1115,18 @@
   }
 
   // ---- Google Sheets Web App URL ----
-  const GOOGLE_SHEET_URL = 'https://script.google.com/macros/s/AKfycbwInJQv7q7qQf8dUXvQDg5kMfnp_auCTz4MrmzCWNGtkBraKQZgsqZ_VYjyQCtCF1cKww/exec';
-
-  // Map ชื่อ column จริงใน Sheets → key ที่ dashboard ใช้
-  // (ตรงตาม header จริง เช่น "q1 Experiential Learning", "q6 ระยะเวลา")
-  const COLUMN_MAP = {
-    'q1 Experiential Learning':          'q1',
-    'q2 การสะท้อนคิด':                  'q2',
-    'q3 ความสามัคดีกลุ่ม':              'q3',
-    'q3 ความสามัคคีกลุ่ม':              'q3',
-    'q4 เครือข่ายสัมพันธ์':             'q4',
-    'q5 สถานที่จัดกิจกรรม':             'q5',
-    'q5 สถานที่จัดกิจกรรม ':            'q5',
-    'q6 ระยะเวลา':                       'q6',
-    'q7 ความสามารถวิทยากร':             'q7',
-    'q8 การอำนวยความสะดวก':             'q8',
-    'เฉลี่ยรวม':                        'เฉลี่ยรวม',
-    'สิ่งที่ประทับใจมากที่สุด':         'impression',
-    'ข้อเสนอแนะ':                        'suggestion',
-    'วันเวลา':                           'timestamp',
-    'เพศ':                               'gender',
-    'สถานะ':                             'status',
-    'แนวทางถ่ายทอดพระบรมราโชบาย 4 ประการ': 'teacher_q1',
-    'ขั้นตอนการให้คำปรึกษาและประสานงานมูลนิธิฯ': 'teacher_q2',
-    'การสร้างเครือข่ายครูที่ปรึกษาและขยายผล': 'teacher_q3',
-  };
-
-  function normalizeRow(raw) {
-    const out = {};
-    for (const [col, val] of Object.entries(raw)) {
-      const key = COLUMN_MAP[col.trim()] ?? col.trim();
-      out[key] = String(val ?? '').trim();
-    }
-    // คำนวณเฉลี่ยรวมถ้าไม่มีหรือเป็น 0
-    const qVals = ['q1','q2','q3','q4','q5','q6','q7','q8']
-      .map(k => parseInt(out[k]) || 0).filter(v => v > 0);
-    if (qVals.length > 0 && (!out['เฉลี่ยรวม'] || parseFloat(out['เฉลี่ยรวม']) === 0)) {
-      out['เฉลี่ยรวม'] = (qVals.reduce((a,b) => a+b, 0) / qVals.length).toFixed(2);
-    }
-    return out;
-  }
+  // วางลิงก์ Web App ของคุณที่นี่ (ดูคำแนะนำในไฟล์ google_apps_script.js)
+  const GOOGLE_SHEET_URL = 'https://script.google.com/macros/s/AKfycbxlKaTZrOVRpzIgewf72UCfY5zqaAD59XftdSwfjVJsw-VV8bQZXz68wV4sDKMts0GG/exec';
 
   async function sendToGoogleSheets(entry) {
+    if (!GOOGLE_SHEET_URL || GOOGLE_SHEET_URL === 'YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE') {
+      console.warn('⚠️ ยังไม่ได้ตั้งค่า GOOGLE_SHEET_URL');
+      return { success: false, reason: 'not_configured' };
+    }
     try {
-      await fetch(GOOGLE_SHEET_URL, {
-        method: 'POST', mode: 'no-cors',
+      const response = await fetch(GOOGLE_SHEET_URL, {
+        method: 'POST',
+        mode: 'no-cors',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(entry)
       });
@@ -1173,37 +1134,6 @@
     } catch (err) {
       console.error('ส่งข้อมูลไม่สำเร็จ:', err);
       return { success: false, reason: err.message };
-    }
-  }
-
-  async function fetchFromGoogleSheets() {
-    const statusEl = document.getElementById('fetchStatus');
-    const show = (msg, color) => {
-      if (!statusEl) return;
-      statusEl.style.display = 'flex';
-      statusEl.style.color   = color || '#E65100';
-      statusEl.textContent   = msg;
-    };
-    show('⏳ กำลังโหลดข้อมูลจาก Google Sheets...');
-    try {
-      const res = await fetch(GOOGLE_SHEET_URL + '?action=getAll');
-      if (!res.ok) throw new Error('HTTP ' + res.status);
-      const raw = await res.json();
-      // debug: แสดง column จริงใน console
-      if (raw.length > 0) console.log('🔍 Sheets columns:', Object.keys(raw[0]));
-      if (Array.isArray(raw) && raw.length > 0) {
-        allResponses = raw.map(normalizeRow);
-        localStorage.setItem('surveyResponses', JSON.stringify(allResponses));
-        show('✅ โหลดข้อมูลสำเร็จ ' + allResponses.length + ' รายการ', '#1B5E20');
-        setTimeout(() => { if (statusEl) statusEl.style.display = 'none'; }, 3000);
-      } else {
-        show('⚠️ ยังไม่มีข้อมูลใน Google Sheets', '#E65100');
-        setTimeout(() => { if (statusEl) statusEl.style.display = 'none'; }, 3000);
-      }
-    } catch (err) {
-      console.warn('ดึงข้อมูลไม่สำเร็จ:', err.message);
-      show('❌ ดึงข้อมูลไม่สำเร็จ — ใช้ localStorage แทน', '#B71C1C');
-      setTimeout(() => { if (statusEl) statusEl.style.display = 'none'; }, 4000);
     }
   }
 
@@ -1393,51 +1323,20 @@
     if (mgmtEl && mgmtEl.parentElement) mgmtEl.parentElement.style.display = 'none';
 
     renderMCQDashboard(n);
-    renderAllRespondents(n);
-  }
 
-  // ── ตารางผู้ตอบทั้งหมด ──
-  function renderAllRespondents(n) {
-    const container = document.getElementById('allRespondentsTable');
-    if (!container) return;
-    if (!n || n === 0) {
-      container.innerHTML = '<div style="text-align:center;padding:24px;color:var(--text-soft);font-size:13px">ยังไม่มีข้อมูล</div>';
-      return;
-    }
-    const lc = v => v>=4.51?'#1B5E20':v>=3.51?'#2E7D32':v>=2.51?'#E65100':v>=1.51?'#BF360C':'#B71C1C';
-    const ll = v => v>=4.51?'มากที่สุด':v>=3.51?'มาก':v>=2.51?'ปานกลาง':v>=1.51?'น้อย':'น้อยที่สุด';
-    const lb = v => v>=4.51?'#E8F5E9':v>=3.51?'#F1F8E9':v>=2.51?'#FFF3E0':v>=1.51?'#FBE9E7':'#FFEBEE';
-    const qc = ['','#B71C1C','#E64A19','#F9A825','#388E3C','#1B5E20'];
-    const sorted = [...allResponses].reverse();
-    const th = s => `<th style="padding:9px 8px;color:var(--gold-light);text-align:center;white-space:nowrap;font-size:12px">${s}</th>`;
-    container.innerHTML = `
-      <p style="font-size:12px;color:var(--text-soft);margin-bottom:10px">ทั้งหมด <b>${n}</b> รายการ (เรียงล่าสุดก่อน)</p>
-      <div style="overflow-x:auto">
-      <table style="width:100%;border-collapse:collapse;font-size:12px;min-width:640px">
-        <thead><tr style="background:var(--navy)">
-          ${['#','วันเวลา','เพศ','สถานะ','q1','q2','q3','q4','q5','q6','q7','q8','เฉลี่ย','ระดับ'].map(th).join('')}
-        </tr></thead>
-        <tbody>
-          ${sorted.map((r,i) => {
-            const avg = parseFloat(r['เฉลี่ยรวม'])||0;
-            const bg  = i%2===0?'white':'#F8F5EE';
-            const qv  = k => { const v=parseInt(r[k])||0; return v?`<b style="color:${qc[v]}">${v}</b>`:`<span style="color:#ccc">—</span>`; };
-            return `<tr style="background:${bg};border-bottom:1px solid #eee">
-              <td style="padding:7px 8px;text-align:center;color:#999;font-size:11px">${n-i}</td>
-              <td style="padding:7px 8px;color:#555;font-size:11px;white-space:nowrap">${r.timestamp||'-'}</td>
-              <td style="padding:7px 8px;text-align:center;font-size:12px">${r.gender==='ชาย'?'👨':r.gender==='หญิง'?'👩':'👤'} ${r.gender||'-'}</td>
-              <td style="padding:7px 8px;text-align:center">
-                <span style="background:${r.status==='ครู'?'#EDE7F6':'#E8F5E9'};color:${r.status==='ครู'?'#4A148C':'#1B5E20'};border-radius:20px;padding:2px 8px;font-size:11px;font-weight:600">${r.status||'-'}</span>
-              </td>
-              ${['q1','q2','q3','q4','q5','q6','q7','q8'].map(k=>`<td style="padding:7px 6px;text-align:center">${qv(k)}</td>`).join('')}
-              <td style="padding:7px 8px;text-align:center;font-weight:700;color:${lc(avg)}">${avg.toFixed(2)}</td>
-              <td style="padding:7px 8px;text-align:center">
-                <span style="background:${lb(avg)};color:${lc(avg)};border-radius:20px;padding:2px 8px;font-size:11px;font-weight:600;white-space:nowrap">${avg?ll(avg):'-'}</span>
-              </td>
-            </tr>`;
-          }).join('')}
-        </tbody>
-      </table></div>`;
+    const preview = allResponses.slice(-5).reverse();
+    const cols = ['timestamp','gender','status','เฉลี่ยรวม'];
+    const colNames = ['วันเวลา','เพศ','สถานะ','เฉลี่ยรวม'];
+    let html = `<p style="font-size:13px;color:var(--text-soft);margin-bottom:8px">แสดง ${Math.min(5,n)} รายการล่าสุด</p>
+    <table style="width:100%;border-collapse:collapse;font-size:13px">
+      <tr style="background:var(--navy);color:var(--gold-light)">
+        ${colNames.map(c=>`<th style="padding:8px 10px;text-align:left;white-space:nowrap">${c}</th>`).join('')}
+      </tr>
+      ${preview.map((r,i)=>`<tr style="background:${i%2===0?'white':'#F8F5EE'}">
+        ${cols.map(c=>`<td style="padding:8px 10px;border-bottom:1px solid var(--border)">${r[c]||'-'}</td>`).join('')}
+      </tr>`).join('')}
+    </table>`;
+    document.getElementById('previewTable').innerHTML = html;
   }
 
   function renderMCQDashboard(n) {
@@ -1658,37 +1557,11 @@
 
   function toggleAdmin() {
     const panel = document.getElementById('adminPanel');
-    const btn   = document.getElementById('adminToggleBtn');
-    if (!panel) { console.error('adminPanel not found!'); return; }
-    if (!btn)   { console.error('adminToggleBtn not found!'); return; }
+    const btn = document.getElementById('adminToggleBtn');
     if (panel.style.display === 'none') {
       panel.style.display = 'block';
-      btn.textContent = '⏳ กำลังโหลด...';
-      btn.disabled = true;
-
-      // แสดงข้อมูล localStorage ก่อนเลย ไม่ต้องรอ Google Sheets
-      try { updateStats(); } catch(e) { console.error('updateStats error:', e); }
-
-      // ตั้ง timeout 8 วินาที ถ้า Google Sheets ช้าเกิน ก็ยังใช้งานได้
-      const timeout = setTimeout(() => {
-        btn.textContent = '✕ ซ่อนข้อมูลสรุป';
-        btn.disabled = false;
-      }, 8000);
-
-      fetchFromGoogleSheets()
-        .then(() => {
-          clearTimeout(timeout);
-          try { updateStats(); } catch(e) { console.error('updateStats error:', e); }
-          btn.textContent = '✕ ซ่อนข้อมูลสรุป';
-          btn.disabled = false;
-        })
-        .catch(e => {
-          clearTimeout(timeout);
-          console.error('fetch error:', e);
-          try { updateStats(); } catch(e2) { console.error('updateStats error:', e2); }
-          btn.textContent = '✕ ซ่อนข้อมูลสรุป';
-          btn.disabled = false;
-        });
+      btn.textContent = '✕ ซ่อนข้อมูลสรุป';
+      updateStats();
     } else {
       panel.style.display = 'none';
       btn.textContent = '🔧 ดูข้อมูลสรุป / Export';
