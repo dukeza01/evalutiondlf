@@ -984,7 +984,7 @@
   let allResponses = JSON.parse(localStorage.getItem('surveyResponses') || '[]');
 
   // ---- Google Sheets Web App URL ----
-  const GOOGLE_SHEET_URL = 'https://script.google.com/macros/s/AKfycbwPbVR1xvYg0IHUPGG2073_eUIyQ8kZ8CUdQUCOjT29f9tqG2gY_1rQBtBwzop5XzC-aw/exec';
+  const GOOGLE_SHEET_URL = 'https://script.google.com/macros/s/AKfycbxCPJj6mH0ZietZwpBOPwPlj78qIP2NK8ulu4JGFUe95QMCrZHQWuogxjdQUWZ4JoG-jQ/exec';
 
   // ---- Fetch all responses from Google Sheets ----
   async function fetchFromGoogleSheets() {
@@ -1014,34 +1014,6 @@
       return false;
     }
   }
-  async function fetchFromGoogleSheets() {
-    const btn = document.getElementById('refreshBtn');
-    if (btn) { btn.disabled = true; btn.textContent = '⏳ กำลังโหลด...'; }
-    try {
-      const res = await fetch(GOOGLE_SHEET_URL + '?action=getAll', { method: 'GET' });
-      const data = await res.json();
-      if (data && Array.isArray(data.responses)) {
-        allResponses = data.responses;
-        localStorage.setItem('surveyResponses', JSON.stringify(allResponses));
-        updateStats();
-        if (btn) { btn.disabled = false; btn.textContent = '🔄 รีเฟรชข้อมูล'; }
-        return true;
-      } else {
-        throw new Error('รูปแบบข้อมูลไม่ถูกต้อง');
-      }
-    } catch (err) {
-      console.error('ดึงข้อมูลไม่สำเร็จ:', err);
-      if (btn) { btn.disabled = false; btn.textContent = '🔄 รีเฟรชข้อมูล'; }
-      const errDiv = document.getElementById('fetchError');
-      if (errDiv) {
-        errDiv.style.display = 'block';
-        errDiv.textContent = '⚠️ ดึงข้อมูลจาก Google Sheets ไม่สำเร็จ (' + err.message + ') — แสดงข้อมูลจาก localStorage แทน';
-        setTimeout(() => { errDiv.style.display = 'none'; }, 6000);
-      }
-      return false;
-    }
-  }
-
   // ---- Role-based section count ----
   // นักเรียน: section 1 → 2 (submit)
   // ครู:      section 1 → 2 → 3 (submit)
@@ -1355,7 +1327,13 @@
       return;
     }
 
-    const avg = (allResponses.reduce((a,r) => a + parseFloat(r['เฉลี่ยรวม']||0), 0) / n).toFixed(2);
+    const qKeys = ['q1','q2','q3','q4','q5','q6','q7','q8'];
+    // คำนวณเฉลี่ยจาก q1–q8 โดยตรง (ป้องกัน field เฉลี่ยรวมใน sheet format ผิด)
+    function rowAvg(r) {
+      const vals = qKeys.map(k => parseInt(r[k])).filter(v => !isNaN(v) && v > 0);
+      return vals.length > 0 ? vals.reduce((a,b) => a+b, 0) / vals.length : 0;
+    }
+    const avg = (allResponses.reduce((a,r) => a + rowAvg(r), 0) / n).toFixed(2);
     document.getElementById('avgScore').textContent = avg;
     const students = allResponses.filter(r=>r.status==='นักเรียน').length;
     const teachers = allResponses.filter(r=>r.status==='ครู').length;
@@ -1366,8 +1344,6 @@
     const females = allResponses.filter(r=>r.gender==='หญิง').length;
     drawDonut('genderChart', ['ชาย','หญิง'], [males, females], ['#1565C0','#AD1457'], 'genderLegend');
     drawDonut('statusChart', ['นักเรียน','ครู'], [students, teachers], ['#1B5E20','#4A148C'], 'statusLegend');
-
-    const qKeys = ['q1','q2','q3','q4','q5','q6','q7','q8'];
     const qLabels = [
       '1.Experiential Learning','2.การสะท้อนคิด',
       '3.ความสามัคคีกลุ่ม','4.เครือข่ายสัมพันธ์',
@@ -1384,15 +1360,19 @@
     renderMCQDashboard(n);
 
     const preview = allResponses.slice(-5).reverse();
-    const cols = ['timestamp','gender','status','เฉลี่ยรวม'];
-    const colNames = ['วันเวลา','เพศ','สถานะ','เฉลี่ยรวม'];
     let html = `<p style="font-size:13px;color:var(--text-soft);margin-bottom:8px">แสดง ${Math.min(5,n)} รายการล่าสุด</p>
     <table style="width:100%;border-collapse:collapse;font-size:13px">
       <tr style="background:var(--navy);color:var(--gold-light)">
-        ${colNames.map(c=>`<th style="padding:8px 10px;text-align:left;white-space:nowrap">${c}</th>`).join('')}
+        <th style="padding:8px 10px;text-align:left;white-space:nowrap">วันเวลา</th>
+        <th style="padding:8px 10px;text-align:left;white-space:nowrap">เพศ</th>
+        <th style="padding:8px 10px;text-align:left;white-space:nowrap">สถานะ</th>
+        <th style="padding:8px 10px;text-align:left;white-space:nowrap">เฉลี่ยรวม</th>
       </tr>
       ${preview.map((r,i)=>`<tr style="background:${i%2===0?'white':'#F8F5EE'}">
-        ${cols.map(c=>`<td style="padding:8px 10px;border-bottom:1px solid var(--border)">${r[c]||'-'}</td>`).join('')}
+        <td style="padding:8px 10px;border-bottom:1px solid var(--border)">${r.timestamp||'-'}</td>
+        <td style="padding:8px 10px;border-bottom:1px solid var(--border)">${r.gender||'-'}</td>
+        <td style="padding:8px 10px;border-bottom:1px solid var(--border)">${r.status||'-'}</td>
+        <td style="padding:8px 10px;border-bottom:1px solid var(--border)">${rowAvg(r).toFixed(2)}</td>
       </tr>`).join('')}
     </table>`;
     document.getElementById('previewTable').innerHTML = html;
@@ -1521,13 +1501,17 @@
       questionLabels['teacher_q1'], questionLabels['teacher_q2'], questionLabels['teacher_q3'],
     ];
 
-    const rows = allResponses.map((r,i) => [
-      i+1, r.timestamp, r.gender||'', r.status||'',
-      ...qKeys.map(k=>r[k]?parseInt(r[k]):''),
-      parseFloat(r['เฉลี่ยรวม'])||'',
-      r.impression||'', r.suggestion||'',
-      r.teacher_q1||'', r.teacher_q2||'', r.teacher_q3||'',
-    ]);
+    const rows = allResponses.map((r,i) => {
+      const vals = qKeys.map(k=>parseInt(r[k])).filter(v=>!isNaN(v)&&v>0);
+      const computedAvg = vals.length > 0 ? (vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(2) : '';
+      return [
+        i+1, r.timestamp, r.gender||'', r.status||'',
+        ...qKeys.map(k=>r[k]?parseInt(r[k]):''),
+        computedAvg,
+        r.impression||'', r.suggestion||'',
+        r.teacher_q1||'', r.teacher_q2||'', r.teacher_q3||'',
+      ];
+    });
 
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
@@ -1556,7 +1540,10 @@
         return [questionLabels[k], parseFloat(avg)||avg, level];
       }),
       [''],
-      ['เฉลี่ยรวมทุกด้าน', n>0?(allResponses.reduce((a,r)=>a+parseFloat(r['เฉลี่ยรวม']||0),0)/n).toFixed(2):''],
+      ['เฉลี่ยรวมทุกด้าน', n>0?(allResponses.reduce((a,r)=>{
+        const vals=qKeys.map(k=>parseInt(r[k])).filter(v=>!isNaN(v)&&v>0);
+        return a+(vals.length>0?vals.reduce((s,b)=>s+b,0)/vals.length:0);
+      },0)/n).toFixed(2):''],
     ];
     const ws2 = XLSX.utils.aoa_to_sheet(summaryData);
     ws2['!cols'] = [{wch:36},{wch:14},{wch:14}];
