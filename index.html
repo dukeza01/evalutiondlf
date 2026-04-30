@@ -951,6 +951,9 @@
 
       <!-- Buttons -->
       <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <button id="refreshBtn" onclick="fetchFromGoogleSheets()" style="background:linear-gradient(135deg,#0D47A1,#1565C0);color:white;border:none;padding:12px 24px;border-radius:50px;font-family:'Sarabun',sans-serif;font-size:15px;font-weight:600;cursor:pointer;box-shadow:0 4px 16px rgba(13,71,161,0.3);display:flex;align-items:center;gap:8px;transition:all 0.2s">
+          🔄 รีเฟรชข้อมูล
+        </button>
         <button onclick="exportExcel()" style="background:linear-gradient(135deg,#1B5E20,#388E3C);color:white;border:none;padding:12px 24px;border-radius:50px;font-family:'Sarabun',sans-serif;font-size:15px;font-weight:600;cursor:pointer;box-shadow:0 4px 16px rgba(27,94,32,0.3);display:flex;align-items:center;gap:8px;transition:all 0.2s">
           📥 Export เป็น Excel
         </button>
@@ -958,6 +961,7 @@
           🗑 ล้างข้อมูลทั้งหมด
         </button>
       </div>
+      <div id="fetchError" style="display:none;margin-top:10px;padding:10px 14px;background:#FFF3E0;border-left:4px solid #FF9800;border-radius:8px;font-size:13px;color:#E65100;line-height:1.6"></div>
 
       <div id="previewTable" style="margin-top:20px;overflow-x:auto"></div>
     </div>
@@ -978,6 +982,65 @@
   let currentSection = 1;
   let userRole = null; // 'นักเรียน' or 'ครู'
   let allResponses = JSON.parse(localStorage.getItem('surveyResponses') || '[]');
+
+  // ---- Google Sheets Web App URL ----
+  const GOOGLE_SHEET_URL = 'https://script.google.com/macros/s/AKfycbx6il6XOmstY1CqtM6n8Y8UcfO5sW4K9isI83IqHgDvOOa_r6Dh7RKa7ZRQ05qfzEcS2w/exec';
+
+  // ---- Fetch all responses from Google Sheets ----
+  async function fetchFromGoogleSheets() {
+    const btn = document.getElementById('refreshBtn');
+    if (btn) { btn.disabled = true; btn.textContent = '⏳ กำลังโหลด...'; }
+    try {
+      const res = await fetch(GOOGLE_SHEET_URL + '?action=getAll', { method: 'GET' });
+      const data = await res.json();
+      if (data && Array.isArray(data.responses)) {
+        allResponses = data.responses;
+        localStorage.setItem('surveyResponses', JSON.stringify(allResponses));
+        updateStats();
+        if (btn) { btn.disabled = false; btn.textContent = '🔄 รีเฟรชข้อมูล'; }
+        return true;
+      } else {
+        throw new Error('รูปแบบข้อมูลไม่ถูกต้อง');
+      }
+    } catch (err) {
+      console.error('ดึงข้อมูลไม่สำเร็จ:', err);
+      if (btn) { btn.disabled = false; btn.textContent = '🔄 รีเฟรชข้อมูล'; }
+      const errDiv = document.getElementById('fetchError');
+      if (errDiv) {
+        errDiv.style.display = 'block';
+        errDiv.textContent = '⚠️ ดึงข้อมูลจาก Google Sheets ไม่สำเร็จ (' + err.message + ') — แสดงข้อมูลจาก localStorage แทน';
+        setTimeout(() => { errDiv.style.display = 'none'; }, 6000);
+      }
+      return false;
+    }
+  }
+  async function fetchFromGoogleSheets() {
+    const btn = document.getElementById('refreshBtn');
+    if (btn) { btn.disabled = true; btn.textContent = '⏳ กำลังโหลด...'; }
+    try {
+      const res = await fetch(GOOGLE_SHEET_URL + '?action=getAll', { method: 'GET' });
+      const data = await res.json();
+      if (data && Array.isArray(data.responses)) {
+        allResponses = data.responses;
+        localStorage.setItem('surveyResponses', JSON.stringify(allResponses));
+        updateStats();
+        if (btn) { btn.disabled = false; btn.textContent = '🔄 รีเฟรชข้อมูล'; }
+        return true;
+      } else {
+        throw new Error('รูปแบบข้อมูลไม่ถูกต้อง');
+      }
+    } catch (err) {
+      console.error('ดึงข้อมูลไม่สำเร็จ:', err);
+      if (btn) { btn.disabled = false; btn.textContent = '🔄 รีเฟรชข้อมูล'; }
+      const errDiv = document.getElementById('fetchError');
+      if (errDiv) {
+        errDiv.style.display = 'block';
+        errDiv.textContent = '⚠️ ดึงข้อมูลจาก Google Sheets ไม่สำเร็จ (' + err.message + ') — แสดงข้อมูลจาก localStorage แทน';
+        setTimeout(() => { errDiv.style.display = 'none'; }, 6000);
+      }
+      return false;
+    }
+  }
 
   // ---- Role-based section count ----
   // นักเรียน: section 1 → 2 (submit)
@@ -1113,10 +1176,6 @@
     entry['เฉลี่ยรวม'] = entry['เฉลี่ยส่วนที่2'];
     return entry;
   }
-
-  // ---- Google Sheets Web App URL ----
-  // วางลิงก์ Web App ของคุณที่นี่ (ดูคำแนะนำในไฟล์ google_apps_script.js)
-  const GOOGLE_SHEET_URL = 'https://script.google.com/macros/s/AKfycbyCEyB0imAYv6pldyAZB7GaEWrpehIKIBg1BD6kqBVcfRMax6DXCGdk8BYNv2_rzThdTw/exec';
 
   async function sendToGoogleSheets(entry) {
     if (!GOOGLE_SHEET_URL || GOOGLE_SHEET_URL === 'YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE') {
@@ -1561,7 +1620,7 @@
     if (panel.style.display === 'none') {
       panel.style.display = 'block';
       btn.textContent = '✕ ซ่อนข้อมูลสรุป';
-      updateStats();
+      fetchFromGoogleSheets().then(ok => { if (!ok) updateStats(); });
     } else {
       panel.style.display = 'none';
       btn.textContent = '🔧 ดูข้อมูลสรุป / Export';
